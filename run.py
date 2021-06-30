@@ -2,6 +2,8 @@
 # CP = constraint programming
 from docplex.mp.model import Model
 import argparse
+import xlsxwriter
+import os
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -240,28 +242,93 @@ def creacionModelo(metadata, esquema):
 
 
 def correrModelo(modelo):
-    fixture = modelo.solve(log_output=True, time_limit=1)
-    print(modelo.get_solve_status())
-    fixture.display()
-    print(modelo._cts_by_name['Ingles__ARG_BRA_9'])
-    fechas = [f for f in range(1,19)]
-    for f in fechas[1:8]:
-        print(modelo._cts_by_name[f'Ingles__ARG_BRA_{f}'])
-    #TODO: ver como devolver la solucion
+    fixture = modelo.solve(log_output=True, time_limit=10, var_value_map=True)
+    print(fixture._var_value_map)
+    #fixture.display()
+    #print(modelo._cts_by_name['Ingles__ARG_BRA_9'])
+    #fechas = [f for f in range(1,19)]
+    #for f in fechas[1:8]:
+    #    print(modelo._cts_by_name[f'Ingles__ARG_BRA_{f}'])
+    #TODO: ver como devolver la solucio
+    return fixture._var_value_map
 
 
-def creacionResumen(solucion):
-    True
-#TODO: hacer el creador del resumen
+def aExcel(solucion, metadata):
+    #region Creacion excel
+
+    direccion_actual = os.getcwd()
+    excel = xlsxwriter.Workbook(f"{direccion_actual}\{args.esquema}.xlsx")
+    partidos = excel.add_worksheet("fixture")
+    breaks = excel.add_worksheet("breaks")
+    secuenciasHA = excel.add_worksheet("patronesHA")
+    #endregion
+
+    #Generamos diccionario de posiciones de cada equipo, cantidad de breaks y cantidad de secuenciasHA
+    ubicacion_por_equipo={}
+    cant_breaks={}
+    cant_secuenciasHA={}
+    i=0
+    for e in metadata.selecciones:
+        ubicacion_por_equipo[e] = i
+        cant_breaks[e] = 0
+        cant_secuenciasHA[e] = 0
+        i = i + 1
+
+    #region Rellenada de excel
+
+    #Ponemos primera fila y primera columna de partidos
+    for e in metadata.selecciones:
+        partidos.write(0, ubicacion_por_equipo[e]+1, e)
+        partidos.write(ubicacion_por_equipo[e]+1, 0, e)
+
+    #Ponemos primeras dos columnas de breaks y patrones HA:
+    for e in metadata.selecciones:
+        breaks.write(ubicacion_por_equipo[e]+1, 0, e)
+        secuenciasHA.write(ubicacion_por_equipo[e] + 1, 0, e)
+
+        breaks.write(ubicacion_por_equipo[e] + 1, 0, e)
+        secuenciasHA.write(ubicacion_por_equipo[e] + 1, 0, e)
+
+        breaks.write(0, 1, "breaks")
+        secuenciasHA.write(0, 1, "secuenciasHA")
+
+        breaks.write(0, 0, "equipo")
+        secuenciasHA.write(0, 0, "equipo")
+
+
+        #Rellenamos la tabla si es variable de partido, sino sumamos un break o una secuenciaHA:
+    for variable in solucion.keys():
+        nombre = variable.name
+        nombre = nombre.split("_")
+        if nombre[0]=='partido':
+            e1 = nombre[1]
+            e2 = nombre[2]
+            f = nombre[3]
+            partidos.write(ubicacion_por_equipo[e1] + 1, ubicacion_por_equipo[e2] + 1, f)
+        if nombre[0]=="secuenciaHA":
+            e = nombre[1]
+            cant_secuenciasHA[e] += int(1)
+        if nombre[0]=="break":
+            print('a')
+            e = nombre[1]
+            cant_breaks[e] += int(1)
+
+    #Rellenamos las tablas de breaks y secuenciaHA
+    for e in metadata.selecciones:
+        breaks.write(ubicacion_por_equipo[e] + 1, 1, cant_breaks[e])
+        secuenciasHA.write(ubicacion_por_equipo[e] + 1, 1, cant_secuenciasHA[e])
+    #endregion
+
+    excel.close()
 
 
 def main():
     esquema = Esquema()
     metadata = Metadata()
     modelo = creacionModelo(metadata, esquema)
-    correrModelo(modelo)
-    #solucion = correrModelo(modelo)
-    #creacionResumen(solucion)
+    #correrModelo(modelo)
+    solucion = correrModelo(modelo)
+    aExcel(solucion, metadata)
 
 
 if __name__=="__main__":
