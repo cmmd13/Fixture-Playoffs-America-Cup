@@ -23,7 +23,6 @@ class Esquema:
             'torneo_doble_rueda_todos_vs_todos',
             'torneo_doble_rueda_no_juegue_si_mismo',
             'compacidad',
-            'equipos_top',
             'breaks_visitante',
             'funcion_objetivo'
         }
@@ -37,13 +36,17 @@ class Esquema:
         if args.esquema != 'mano_a_mano':
             restricciones = {
                 'torneo_doble_rueda_primera_vuelta',
-                'torneo_doble_rueda_segunda_vuelta'
+                'torneo_doble_rueda_segunda_vuelta',
+                'equipos_top'
             }
         else:
-            restricciones = set()
+            restricciones = {
+                'equipos_top_esquema_mano_a_mano'
+            }
 
         if args.esquema != 'mirror':
             restricciones.add('patronHA')
+
 
         restricciones.add(f'esquema_{args.esquema}')
 
@@ -203,23 +206,60 @@ def creacionRestriccion(restriccion, modelo, metadata, variables):
     #endregion
 
     # region Esquema Invertido:
-    # TODO: Armar restricciones esquema invertido
+
     if restriccion == 'esquema_invertido':
-        True
+        for e1 in metadata.selecciones:
+            for e2 in metadata.selecciones:
+                if e1 != e2:
+                    for f in metadata.fechas[0:9]:
+                        modelo.add_constraint(variables.x[(e1, e2, f)] - variables.x[(e2, e1, 2*len(metadata.selecciones)-1-f)] == 0,
+                                              ctname=f"Invertido__{e1}_{e2}_{f}")
 
     # endregion
 
     # region Esquema Mano A Mano:
-    # TODO: Armar restricciones esquema mano a mano
+
     if restriccion == 'esquema_mano_a_mano':
-        True
+        for e1 in metadata.selecciones:
+            for e2 in metadata.selecciones:
+                if e1 != e2:
+                    for f in metadata.fechas_impar:
+                        modelo.add_constraint(variables.x[(e1, e2, f)] - variables.x[(e2, e1, f+1)] == 0,
+                                              ctname=f"Mano_a_mano__{e1}_{e2}_{f}")
+
+    if restriccion == 'equipos_top_esquema_mano_a_mano':
+        for e_debil in metadata.selecciones:
+                if not metadata.selecciones_top.__contains__(e_debil):
+                    for f in metadata.fechas_impar[0:8]:
+                        modelo.add_constraint(
+                            modelo.sum(
+                                variables.x[(e_debil, e_fuerte, f_)] + variables.x[(e_fuerte, e_debil, f_)] for e_fuerte in metadata.selecciones_top for f_ in [f, f + 2]) <= 1,
+                                ctname=f"vsFuerte_Mano_a_mano__{e_debil}_{f}")
+
 
     # endregion
 
     # region Esquema Minimax:
-    # TODO: Armar restricciones esquema minimax
+
     if restriccion == 'esquema_minimax':
-        True
+        c = 5
+        d = 13
+        for e1 in metadata.selecciones:
+            for e2 in metadata.selecciones:
+                if e1 != e2:
+                    for f in metadata.fechas[0:18-c]:
+                        modelo.add_constraint(
+                            modelo.sum(
+                                variables.x[(e1, e2, f_)] + variables.x[(e2, e1, f_)] for f_ in [z for z in range(f, f+c+1)]) <= 1,
+                            ctname=f"Minimax_1__{e1}_{e2}_{f}")
+                    for f in metadata.fechas:
+                        fechas_sin_f = list(range(max(f-d,1), min(f+d,2*len(metadata.selecciones)-1)))
+                        fechas_sin_f.remove(f)
+                        modelo.add_constraint(
+                            variables.x[(e2, e1, f)] - modelo.sum(variables.x[(e1, e2, f_)] for f_ in fechas_sin_f) <= 0,
+                            ctname=f"Minimax_2__{e1}_{e2}_{f}")
+
+
 
     # endregion
 
@@ -232,7 +272,7 @@ def creacionModelo(metadata, esquema):
     modelo.minimize(modelo.sum(variables.w[(e, f)] for e in metadata.selecciones for f in metadata.fechas_impar))
     for restriccion in esquema.Restricciones:
         creacionRestriccion(restriccion, modelo, metadata, variables)
-
+    print(esquema.Restricciones)
     #para chequear que esté andando
     #print(modelo.export_to_string())
 
@@ -240,13 +280,9 @@ def creacionModelo(metadata, esquema):
 
 
 def correrModelo(modelo):
-    fixture = modelo.solve(log_output=True, time_limit=1)
+    fixture = modelo.solve(log_output=True)
     print(modelo.get_solve_status())
     fixture.display()
-    print(modelo._cts_by_name['Ingles__ARG_BRA_9'])
-    fechas = [f for f in range(1,19)]
-    for f in fechas[1:8]:
-        print(modelo._cts_by_name[f'Ingles__ARG_BRA_{f}'])
     #TODO: ver como devolver la solucion
 
 
