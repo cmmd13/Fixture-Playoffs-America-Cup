@@ -168,21 +168,37 @@ def creacionRestriccion(restriccion, modelo, metadata, variables):
             for otro_e in metadata.selecciones:
                 if e != otro_e:
                     for f in metadata.fechas[0:9]:
-                        modelo.add_constraint(variables.x[(e, otro_e, f)] - variables.x[(otro_e, e, f+len(metadata.fechas)/2)] == 0,
+                        modelo.add_constraint(variables.x[(e, otro_e, f)] - variables.x[(otro_e, e, f+len(metadata.selecciones)-1)] == 0,
                                          ctname=f"Mirror__{e}_{otro_e}_{f}")
 
     #endregion
 
     #region Esquema Frances:
-    # TODO: Armar restricciones esquema frances
+
     if restriccion == 'esquema_frances':
-        True
+        for e1 in metadata.selecciones:
+            for e2 in metadata.selecciones:
+                if e1 != e2:
+                    modelo.add_constraint(variables.x[(e1, e2, 1)] - variables.x[(e2, e1, 2*len(metadata.selecciones)-2)] == 0,
+                        ctname=f"Frances__{e1}_{e2}_{1}")
+                    for f in metadata.fechas[1:9]:
+                        modelo.add_constraint(variables.x[(e1, e2, f)] - variables.x[(e2, e1, f+len(metadata.selecciones)-2)] == 0,
+                                         ctname=f"Frances__{e1}_{e2}_{f}")
+
     #endregion
 
     #region Esquema Ingles:
-    # TODO: Armar restricciones esquema ingles
+
     if restriccion == 'esquema_ingles':
-        True
+        for e1 in metadata.selecciones:
+            for e2 in metadata.selecciones:
+                if e1 != e2:
+                    modelo.add_constraint(variables.x[(e1, e2, len(metadata.selecciones)-1)] - variables.x[(e2, e1, len(metadata.selecciones))] == 0,
+                                          ctname=f"Ingles__{e1}_{e2}_{len(metadata.selecciones)-1}")
+                    for f in metadata.fechas[1:8]:
+                        modelo.add_constraint(variables.x[(e1, e2, f)] - variables.x[(e2, e1, f+len(metadata.selecciones))] == 0,
+                        ctname=f"Ingles__{e1}_{e2}_{f}")
+
 
     #endregion
 
@@ -210,7 +226,8 @@ def creacionRestriccion(restriccion, modelo, metadata, variables):
 
 def creacionModelo(metadata, esquema):
 
-    modelo = Model(args.esquema)
+    #modelo = Model(args.esquema)
+    modelo = Model(args.esquema, cts_by_name=True)
     variables = Variables(modelo, metadata)
     modelo.minimize(modelo.sum(variables.w[(e, f)] for e in metadata.selecciones for f in metadata.fechas_impar))
     for restriccion in esquema.Restricciones:
@@ -224,8 +241,12 @@ def creacionModelo(metadata, esquema):
 
 def correrModelo(modelo):
     fixture = modelo.solve(log_output=True, time_limit=1)
-    fixture.display()
     print(modelo.get_solve_status())
+    fixture.display()
+    print(modelo._cts_by_name['Ingles__ARG_BRA_9'])
+    fechas = [f for f in range(1,19)]
+    for f in fechas[1:8]:
+        print(modelo._cts_by_name[f'Ingles__ARG_BRA_{f}'])
     #TODO: ver como devolver la solucion
 
 
