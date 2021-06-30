@@ -19,12 +19,7 @@ class Metadata:
 
 class Esquema:
     def __init__(self):
-        self.Restricciones = self.RestriccionesDefault()
-        self.RestriccionesEsquema()
-
-
-    def RestriccionesDefault(self):
-        restricciones = {
+        self.Restricciones = {
             'torneo_doble_rueda_todos_vs_todos',
             'torneo_doble_rueda_no_juegue_si_mismo',
             'compacidad',
@@ -32,7 +27,10 @@ class Esquema:
             'breaks_visitante',
             'funcion_objetivo'
         }
-        return restricciones
+
+        self.RestriccionesEsquema()
+
+
 
     def RestriccionesEsquema(self):
 
@@ -50,7 +48,6 @@ class Esquema:
         restricciones.add(f'esquema_{args.esquema}')
 
         self.Restricciones = self.Restricciones.union(restricciones)
-        print(self.Restricciones)
 
 
 class Variables:
@@ -226,7 +223,7 @@ def creacionModelo(metadata, esquema):
 
 
 def correrModelo(modelo):
-    fixture = modelo.solve(log_output=True)
+    fixture = modelo.solve(log_output=True, time_limit=1)
     fixture.display()
     print(modelo.get_solve_status())
     #TODO: ver como devolver la solucion
@@ -241,7 +238,7 @@ def main():
     esquema = Esquema()
     metadata = Metadata()
     modelo = creacionModelo(metadata, esquema)
-    #correrModelo(modelo)
+    correrModelo(modelo)
     #solucion = correrModelo(modelo)
     #creacionResumen(solucion)
 
