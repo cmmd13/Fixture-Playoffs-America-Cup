@@ -299,12 +299,14 @@ def aExcel(solucion, metadata):
 
     direccion_actual = os.getcwd()
     excel = xlsxwriter.Workbook(f"{direccion_actual}\{args.esquema}.xlsx")
-    partidos = excel.add_worksheet("fixture")
-    breaks = excel.add_worksheet("breaks")
-    secuenciasHA = excel.add_worksheet("patronesHA")
+    partidos = excel.add_worksheet(f"Fixture {args.esquema}")
+    breaks = excel.add_worksheet("Breaks")
+    #min_max = excel.add_worksheet("Diferencia entre partidos")
+    bold = excel.add_format({'bold': True})
+    #secuenciasHA = excel.add_worksheet("patronesHA")
     #endregion
 
-
+    #region Generacion diccionarios
     #Generamos diccionario de posiciones de cada equipo, cantidad de breaks y cantidad de secuenciasHA
     ubicacion_por_equipo={}
     cant_breaks={}
@@ -315,30 +317,27 @@ def aExcel(solucion, metadata):
         cant_breaks[e] = 0
         cant_secuenciasHA[e] = 0
         i = i + 1
+    #endregion
 
-    #region Rellenada de excel
+    #region Rellenado de excel
 
-    #Ponemos primera fila y primera columna de partidos
+    #Ponemos primera columna de nombres de equipos en partidos y breaks
+    #Ponemos primera fila de numero de fechas en partidos
     for e in metadata.selecciones:
-        partidos.write(0, ubicacion_por_equipo[e]+1, e)
-        partidos.write(ubicacion_por_equipo[e]+1, 0, e)
+        partidos.write(ubicacion_por_equipo[e]+1, 0, e,  bold)
+        breaks.write(ubicacion_por_equipo[e]+1, 0, e,  bold)
 
-    #Ponemos primeras dos columnas de breaks y patrones HA:
-    for e in metadata.selecciones:
-        breaks.write(ubicacion_por_equipo[e]+1, 0, e)
-        secuenciasHA.write(ubicacion_por_equipo[e] + 1, 0, e)
+    for i in range(18):
+        partidos.write(0, i+1, i+1, bold)
 
-        breaks.write(ubicacion_por_equipo[e] + 1, 0, e)
-        secuenciasHA.write(ubicacion_por_equipo[e] + 1, 0, e)
+    #Ponemos titulos a las columnas en partidos y breaks
+    partidos.write(0, 0, "Team", bold)
+    breaks.write(0, 0, "Team", bold)
+    breaks.write(0, 1, "Breaks", bold)
+    breaks.write(0, 2, "H-A", bold)
+    breaks.write(0, 3, "A-H", bold)
 
-        breaks.write(0, 1, "breaks")
-        secuenciasHA.write(0, 1, "secuenciasHA")
-
-        breaks.write(0, 0, "equipo")
-        secuenciasHA.write(0, 0, "equipo")
-
-
-        #Rellenamos la tabla si es variable de partido, sino sumamos un break o una secuenciaHA:
+    #Rellenamos la tabla si es variable de partido, sino sumamos un break o una secuenciaHA:
     for variable in solucion.keys():
         nombre = variable.name
         nombre = nombre.split("_")
@@ -346,19 +345,27 @@ def aExcel(solucion, metadata):
             e1 = nombre[1]
             e2 = nombre[2]
             f = nombre[3]
-            partidos.write(ubicacion_por_equipo[e1] + 1, ubicacion_por_equipo[e2] + 1, f)
+            partidos.write(ubicacion_por_equipo[e1] + 1, int(f), e2)
+            partidos.write(ubicacion_por_equipo[e2] + 1, int(f), f"@{e1}")
         if nombre[0]=="secuenciaHA":
             e = nombre[1]
             cant_secuenciasHA[e] += int(1)
         if nombre[0]=="break":
-            print('a')
             e = nombre[1]
             cant_breaks[e] += int(1)
 
-    #Rellenamos las tablas de breaks y secuenciaHA
+    #Rellenamos la tabla de breaks
     for e in metadata.selecciones:
         breaks.write(ubicacion_por_equipo[e] + 1, 1, cant_breaks[e])
-        secuenciasHA.write(ubicacion_por_equipo[e] + 1, 1, cant_secuenciasHA[e])
+        breaks.write(ubicacion_por_equipo[e] + 1, 2, cant_secuenciasHA[e])
+        breaks.write(ubicacion_por_equipo[e] + 1, 3, 9 - cant_breaks[e] - cant_secuenciasHA[e])
+
+    #Completamos la diferencia entre partidos
+    #min_diff, max_diff = difEntrePartidos(solucion, metadata)
+    #min_max.write(0, 0, "Minima diferencia", bold)
+    #min_max.write(0, 1, min_diff)
+    #min_max.write(0, 0, "Maxima diferencia", bold)
+    #min_max.write(0, 1, max_diff)
     #endregion
 
     excel.close()
