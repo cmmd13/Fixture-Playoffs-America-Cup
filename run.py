@@ -284,15 +284,34 @@ def creacionModelo(metadata, esquema):
 def correrModelo(modelo):
 
     fixture = modelo.solve(log_output=True, time_limit=10, var_value_map=True)
-    print(fixture._var_value_map)
+    #print(fixture._var_value_map)
     #fixture.display()
     #print(modelo._cts_by_name['Ingles__ARG_BRA_9'])
     #fechas = [f for f in range(1,19)]
     #for f in fechas[1:8]:
     #    print(modelo._cts_by_name[f'Ingles__ARG_BRA_{f}'])
-    #TODO: ver como devolver la solucio
+    #TODO: ver como devolver la solucion
     return fixture._var_value_map
 
+def difEntrePartidos(solucion, metadata):
+    #region Calculo diferencia minima y maxima
+    diferencias = []
+    f1 = 0
+    f2 = 0
+    for e1 in metadata.selecciones:
+        for e2 in metadata.selecciones:
+            if e1 != e2:
+                for f in metadata.fechas:
+                    for variable in solucion.keys():
+                        variable = variable.name
+                        if variable == f"partido_{e1}_{e2}_{f}":
+                            f1 = f
+                        if variable == f"partido_{e2}_{e1}_{f}":
+                            f2 = f
+                diferencias.append(abs(f1-f2))
+    min_diff = min(diferencias)
+    max_diff = max(diferencias)
+    return [min_diff, diferencias.count(min_diff)/2, max_diff, diferencias.count(max_diff)/2]
 
 def aExcel(solucion, metadata):
     #region Creacion excel
@@ -300,10 +319,10 @@ def aExcel(solucion, metadata):
     direccion_actual = os.getcwd()
     excel = xlsxwriter.Workbook(f"{direccion_actual}\{args.esquema}.xlsx")
     partidos = excel.add_worksheet(f"Fixture {args.esquema}")
-    breaks = excel.add_worksheet("Breaks")
-    #min_max = excel.add_worksheet("Diferencia entre partidos")
+    breaks = excel.add_worksheet("Breaks y secuencias")
+    min_max = excel.add_worksheet("Diferencia entre partidos")
+    partidos_acum = excel.add_worksheet("Partidos acumulados")
     bold = excel.add_format({'bold': True})
-    #secuenciasHA = excel.add_worksheet("patronesHA")
     #endregion
 
     #region Generacion diccionarios
@@ -326,12 +345,15 @@ def aExcel(solucion, metadata):
     for e in metadata.selecciones:
         partidos.write(ubicacion_por_equipo[e]+1, 0, e,  bold)
         breaks.write(ubicacion_por_equipo[e]+1, 0, e,  bold)
+        partidos_acum.write(ubicacion_por_equipo[e] + 1, 0, e, bold)
 
     for i in range(18):
         partidos.write(0, i+1, i+1, bold)
+        partidos_acum.write(0, i+1, i+1, bold)
 
     #Ponemos titulos a las columnas en partidos y breaks
     partidos.write(0, 0, "Team", bold)
+    partidos_acum.write(0, 0, "Team", bold)
     breaks.write(0, 0, "Team", bold)
     breaks.write(0, 1, "Breaks", bold)
     breaks.write(0, 2, "H-A", bold)
@@ -354,6 +376,18 @@ def aExcel(solucion, metadata):
             e = nombre[1]
             cant_breaks[e] += int(1)
 
+    #Rellenamos la tabla de partidos acumulados
+    for e in metadata.selecciones:
+        contador = 0
+        for f in range(1,19):
+            for variable in solucion.keys():
+                nombre = variable.name
+                nombre = nombre.split("_")
+                if (nombre[0] == 'partido') and (str(nombre[2]) == e) and (int(nombre[3]) == f):
+                    contador += 1
+                partidos_acum.write(ubicacion_por_equipo[e]+1, int(f), contador)
+
+
     #Rellenamos la tabla de breaks
     for e in metadata.selecciones:
         breaks.write(ubicacion_por_equipo[e] + 1, 1, cant_breaks[e])
@@ -361,11 +395,15 @@ def aExcel(solucion, metadata):
         breaks.write(ubicacion_por_equipo[e] + 1, 3, 9 - cant_breaks[e] - cant_secuenciasHA[e])
 
     #Completamos la diferencia entre partidos
-    #min_diff, max_diff = difEntrePartidos(solucion, metadata)
-    #min_max.write(0, 0, "Minima diferencia", bold)
-    #min_max.write(0, 1, min_diff)
-    #min_max.write(0, 0, "Maxima diferencia", bold)
-    #min_max.write(0, 1, max_diff)
+    diferencias = difEntrePartidos(solucion, metadata)
+    min_max.write(0, 0, "Minima diferencia", bold)
+    min_max.write(0, 1, diferencias[0])
+    min_max.write(0,2, f"{int(diferencias[1])} veces")
+    min_max.write(1, 0, "Maxima diferencia", bold)
+    min_max.write(1, 1, diferencias[2])
+    min_max.write(1, 2, f"{int(diferencias[3])} veces")
+    min_max.set_column(0, 0, len("Maxima diferencia"))
+    min_max.set_column(1, 1, 4)
     #endregion
 
     excel.close()
