@@ -4,8 +4,9 @@ from docplex.mp.model import Model
 import argparse
 import xlsxwriter
 import os
-
+import pandas as pd
 import numpy as np
+
 from matplotlib import pyplot as plt
 from matplotlib.path import Path # Para colores a la gráfica
 from matplotlib.patches import PathPatch # Más para colores
@@ -17,6 +18,7 @@ class Metadata:
         self.selecciones_top = {'BRA', 'ARG'}
         self.fechas = [f for f in range(1, 19)]
         self.fechas_impar = [f for f in range(1, 18, 2)]
+        self.fixture_pre_armado = pd.DataFrame()
 
 
 class Esquema:
@@ -26,7 +28,8 @@ class Esquema:
             'torneo_doble_rueda_no_juegue_si_mismo',
             'compacidad',
             'breaks_visitante',
-            'funcion_objetivo'
+            'funcion_objetivo',
+            'fixture_pre_armado'
         }
 
         self.RestriccionesEsquema()
@@ -265,10 +268,31 @@ def creacionRestriccion(restriccion, modelo, metadata, variables):
 
     # endregion
 
+    # region Fixture Pre-Armado:
+    if restriccion == 'fixture_pre_armado':
+        df = metadata.fixture_pre_armado
+        if df.shape != (0,0):
+            df = df.fillna('NO DATA')
+            for e in metadata.selecciones:
+                for f in metadata.fechas:
+                    valor = df[df.Team == e][f].values[0]
+                    if valor != 'NO DATA':
+                        if valor.startswith('@'):
+                            otro_e = valor[1:]
+                            modelo.add_constraint(
+                                variables.x[(otro_e, e, f)] == 1,
+                                ctname=f"Fixture_pre_armado__{e}_{otro_e}_{f}")
+                        else:
+                            otro_e = valor
+                            modelo.add_constraint(
+                                variables.x[(e, otro_e, f)] == 1,
+                                ctname=f"Fixture_pre_armado__{e}_{otro_e}_{f}")
+
+    # endregion
+
 
 def creacionModelo(metadata, esquema):
 
-    #modelo = Model(args.esquema)
     modelo = Model(args.esquema, cts_by_name=True)
     variables = Variables(modelo, metadata)
     modelo.minimize(modelo.sum(variables.w[(e, f)] for e in metadata.selecciones for f in metadata.fechas_impar))
@@ -412,6 +436,7 @@ def aExcel(solucion, metadata):
 def main():
     esquema = Esquema()
     metadata = Metadata()
+    #metadata.fixture_pre_armado = pd.read_excel('fixture_pre_armado.xlsx', sheet_name=0, header=0, engine='openpyxl')
     modelo = creacionModelo(metadata, esquema)
     #correrModelo(modelo)
     solucion = correrModelo(modelo)
