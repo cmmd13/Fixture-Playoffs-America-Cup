@@ -18,7 +18,8 @@ class Metadata:
         self.selecciones_top = {'BRA', 'ARG'}
         self.fechas = [f for f in range(1, 19)]
         self.fechas_impar = [f for f in range(1, 18, 2)]
-        self.fixture_pre_armado = pd.DataFrame()
+        self.fixture_pre_armado = pd.read_excel('fixture_pre_armado.xlsx',
+                                                engine='openpyxl')
 
 
 class Esquema:
@@ -316,6 +317,7 @@ def correrModelo(modelo):
     #    print(modelo._cts_by_name[f'Ingles__ARG_BRA_{f}'])
     return fixture._var_value_map
 
+
 def difEntrePartidos(solucion, metadata):
     #region Calculo diferencia minima y maxima
     diferencias = []
@@ -335,6 +337,7 @@ def difEntrePartidos(solucion, metadata):
     min_diff = min(diferencias)
     max_diff = max(diferencias)
     return [min_diff, diferencias.count(min_diff)/2, max_diff, diferencias.count(max_diff)/2]
+
 
 def aExcel(solucion, metadata):
     #region Creacion excel
