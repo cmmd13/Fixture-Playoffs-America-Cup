@@ -25,6 +25,7 @@ def main():
         if optimo_fo == 0:
             mejor_sol = sol
             mejor_optimo_fo = optimo_fo
+            mejor_c, mejor_d = c, d
 
     print(mejor_c, mejor_d, mejor_sol)
 

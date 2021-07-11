@@ -327,7 +327,7 @@ def aExcel(solucion, metadata):
     d = metadata.minimax[1]
     direccion_actual = os.getcwd()
     excel = xlsxwriter.Workbook(f"{direccion_actual}\minimax_{c}_{d}.xlsx")
-    partidos = excel.add_worksheet(f"Fixture minimax}")
+    partidos = excel.add_worksheet(f"Fixture minimax")
     breaks = excel.add_worksheet("Breaks y secuencias")
     min_max = excel.add_worksheet("Diferencia entre partidos")
     partidos_acum = excel.add_worksheet("Partidos acumulados")
