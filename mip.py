@@ -13,13 +13,14 @@ from matplotlib.patches import PathPatch # Más para colores
 import seaborn as sns #Libreria donde estan los colores
 
 class Metadata:
-    def __init__(self):
+    def __init__(self, c: int = -1, d: int = -1):
         self.selecciones = ['BRA', 'ARG', 'COL', 'URU', 'CHI', 'PER', 'VEN', 'BOL', 'PAR', 'ECU']
         self.selecciones_top = {'BRA', 'ARG'}
         self.fechas = [f for f in range(1, 19)]
         self.fechas_impar = [f for f in range(1, 18, 2)]
         self.fixture_pre_armado = pd.read_excel('fixture_pre_armado.xlsx',
                                                 engine='openpyxl')
+        self.minimax = [c, d]
 
 
 class Esquema:
@@ -30,33 +31,13 @@ class Esquema:
             'compacidad',
             'breaks_visitante',
             'funcion_objetivo',
-            'fixture_pre_armado'
+            'fixture_pre_armado',
+            'torneo_doble_rueda_primera_vuelta',
+            'torneo_doble_rueda_segunda_vuelta',
+            'equipos_top',
+            'patronHA',
+            'esquema_minimax'
         }
-
-        self.RestriccionesEsquema()
-
-
-
-    def RestriccionesEsquema(self):
-
-        if args.esquema != 'mano_a_mano':
-            restricciones = {
-                'torneo_doble_rueda_primera_vuelta',
-                'torneo_doble_rueda_segunda_vuelta',
-                'equipos_top'
-            }
-        else:
-            restricciones = {
-                'equipos_top_esquema_mano_a_mano'
-            }
-
-        if args.esquema != 'mirror':
-            restricciones.add('patronHA')
-
-
-        restricciones.add(f'esquema_{args.esquema}')
-
-        self.Restricciones = self.Restricciones.union(restricciones)
 
 
 class Variables:
@@ -248,8 +229,8 @@ def creacionRestriccion(restriccion, modelo, metadata, variables):
     # region Esquema Minimax:
 
     if restriccion == 'esquema_minimax':
-        c = 5
-        d = 13
+        c = metadata.minimax[0]
+        d = metadata.minimax[1]
         for e1 in metadata.selecciones:
             for e2 in metadata.selecciones:
                 if e1 != e2:
@@ -294,12 +275,12 @@ def creacionRestriccion(restriccion, modelo, metadata, variables):
 
 def creacionModelo(metadata, esquema):
 
-    modelo = Model(args.esquema, cts_by_name=True)
+    modelo = Model('minimax', cts_by_name=True)
     variables = Variables(modelo, metadata)
     modelo.minimize(modelo.sum(variables.w[(e, f)] for e in metadata.selecciones for f in metadata.fechas_impar))
     for restriccion in esquema.Restricciones:
         creacionRestriccion(restriccion, modelo, metadata, variables)
-    print(esquema.Restricciones)
+    #print(esquema.Restricciones)
     #para chequear que esté andando
     #print(modelo.export_to_string())
 
@@ -308,7 +289,7 @@ def creacionModelo(metadata, esquema):
 
 def correrModelo(modelo):
 
-    fixture = modelo.solve(log_output=True, time_limit=10, var_value_map=True)
+    fixture = modelo.solve(log_output=True, time_limit=1500, var_value_map=True)
     #print(fixture._var_value_map)
     #fixture.display()
     #print(modelo._cts_by_name['Ingles__ARG_BRA_9'])
@@ -342,9 +323,11 @@ def difEntrePartidos(solucion, metadata):
 def aExcel(solucion, metadata):
     #region Creacion excel
 
+    c = metadata.minimax[0]
+    d = metadata.minimax[1]
     direccion_actual = os.getcwd()
-    excel = xlsxwriter.Workbook(f"{direccion_actual}\{args.esquema}.xlsx")
-    partidos = excel.add_worksheet(f"Fixture {args.esquema}")
+    excel = xlsxwriter.Workbook(f"{direccion_actual}\minimax_{c}_{d}.xlsx")
+    partidos = excel.add_worksheet(f"Fixture minimax}")
     breaks = excel.add_worksheet("Breaks y secuencias")
     min_max = excel.add_worksheet("Diferencia entre partidos")
     partidos_acum = excel.add_worksheet("Partidos acumulados")
@@ -435,25 +418,9 @@ def aExcel(solucion, metadata):
     excel.close()
 
 
-def main():
+def minimax(c, d):
     esquema = Esquema()
-    metadata = Metadata()
-    #metadata.fixture_pre_armado = pd.read_excel('fixture_pre_armado.xlsx', sheet_name=0, header=0, engine='openpyxl')
+    metadata = Metadata(c, d)
     modelo = creacionModelo(metadata, esquema)
-    #correrModelo(modelo)
     solucion = correrModelo(modelo)
     aExcel(solucion, metadata)
-
-
-if __name__=="__main__":
-    # Creamos flags:
-    parser = argparse.ArgumentParser(
-        description='queremos fijar el tipo de esquema del fixture, valor predefino = mirror'
-    )
-    parser.add_argument(
-        "--esquema",
-        default='mirror',
-        choices=['mirror', 'frances', 'ingles', 'invertido', 'mano_a_mano', 'minimax']
-    )
-    args = parser.parse_args()
-    main()

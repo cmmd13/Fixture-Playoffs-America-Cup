@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 def partidos_posibles_(c, d):
-    fixture = pd.read_excel('', engine='openpyxl') #TODO: nombre debe coincidir con el q le pongamos en el mip.py
+    fixture = pd.read_excel(f'minimax_{c}_{d}', engine='openpyxl')
     partidos_posibles = []
     for i in fixture.index:
         equipo1 = fixture['Team'][i]
@@ -39,7 +39,7 @@ def partidos_posibles_(c, d):
 def crear_fixture_pre_armado(partidos_seleccionados):
     #region CreateExcel
     direccion_actual = os.getcwd()
-    excel = xls.Workbook(direccion_actual + "\ " + "fixture_pre_armado.xlsx")
+    excel = xls.Workbook(direccion_actual + "\\" + "fixture_pre_armado.xlsx")
     partidos = excel.add_worksheet("Fixture")
     bold = excel.add_format({'bold': True})
     #endregion
