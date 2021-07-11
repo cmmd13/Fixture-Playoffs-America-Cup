@@ -15,7 +15,7 @@ def main():
     # El primer fixture de la ejecucion
     # Vamos a asumir q siempre va a considerar el fixture pre armado, y q empieza vacio.
     print('empieza la magia')
-    anterior_fue_factible, mejor_sol = minimax(c, d)
+    anterior_fue_factible= minimax(c, d)
 
     # Iteramos moviendo c y d
     while anterior_fue_factible:
@@ -24,7 +24,7 @@ def main():
         print(f'seleccionador de partidos para {c} y {d}')
         seleccionador_partidos(args.partidos, c, d)
         print(f'arranca la ejecucion con {c} y {d}')
-        anterior_fue_factible, sol= minimax(c, d)
+        anterior_fue_factible= minimax(c, d)
 
         #if optimo_fo == 0 and anterior_fue_factible:
         #    mejor_sol = sol

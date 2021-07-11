@@ -416,7 +416,9 @@ def minimax(c, d):
         solucion = fixture._var_value_map
         aExcel(solucion, metadata)
 
-        return True, solucion
+        return True
+        #return True, solucion
 
     else:
-        return False, None
+        return False
+        #return False, None
