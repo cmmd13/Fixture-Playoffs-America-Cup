@@ -235,10 +235,10 @@ def creacionRestriccion(restriccion, modelo, metadata, variables):
                     for f in metadata.fechas[0:18-c]:
                         modelo.add_constraint(
                             modelo.sum(
-                                variables.x[(e1, e2, f_)] + variables.x[(e2, e1, f_)] for f_ in [z for z in range(f, f+c+1)]) <= 1,
+                                variables.x[(e1, e2, f_)] + variables.x[(e2, e1, f_)] for f_ in [z for z in range(f, f+c)]) <= 1,
                             ctname=f"Minimax_1__{e1}_{e2}_{f}")
                     for f in metadata.fechas:
-                        fechas_sin_f = list(range(max(f-d,1), min(f+d,2*len(metadata.selecciones)-1)))
+                        fechas_sin_f = list(range(max(f-d,1), min(f+d+1, 2 * len(metadata.selecciones)-1)))
                         fechas_sin_f.remove(f)
                         modelo.add_constraint(
                             variables.x[(e2, e1, f)] - modelo.sum(variables.x[(e1, e2, f_)] for f_ in fechas_sin_f) <= 0,

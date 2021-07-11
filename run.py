@@ -9,8 +9,7 @@ from mip import minimax
 from seleccionador_de_partidos import seleccionador_partidos
 
 def main():
-    mejor_c, mejor_d = 0, 18
-    c, d = 3, 15
+    c, d = 4, 14
 
     # El primer fixture de la ejecucion
     # Vamos a asumir q siempre va a considerar el fixture pre armado, y q empieza vacio.
