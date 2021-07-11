@@ -287,18 +287,6 @@ def creacionModelo(metadata, esquema):
     return modelo
 
 
-def correrModelo(modelo):
-
-    fixture = modelo.solve(log_output=True, time_limit=1500, var_value_map=True)
-    #print(fixture._var_value_map)
-    #fixture.display()
-    #print(modelo._cts_by_name['Ingles__ARG_BRA_9'])
-    #fechas = [f for f in range(1,19)]
-    #for f in fechas[1:8]:
-    #    print(modelo._cts_by_name[f'Ingles__ARG_BRA_{f}'])
-    return fixture._var_value_map
-
-
 def difEntrePartidos(solucion, metadata):
     #region Calculo diferencia minima y maxima
     diferencias = []
@@ -422,5 +410,15 @@ def minimax(c, d):
     esquema = Esquema()
     metadata = Metadata(c, d)
     modelo = creacionModelo(metadata, esquema)
-    solucion = correrModelo(modelo)
-    aExcel(solucion, metadata)
+
+    #corremos el modelo
+    fixture = modelo.solve(log_output=True, time_limit=1500, var_value_map=True)
+
+    if fixture != None:
+        solucion = fixture._var_value_map
+        aExcel(solucion, metadata)
+
+        return True, solucion
+
+    else:
+        return False, None
