@@ -32,8 +32,6 @@ class Esquema:
             'breaks_visitante',
             'funcion_objetivo',
             'fixture_pre_armado',
-            'torneo_doble_rueda_primera_vuelta',
-            'torneo_doble_rueda_segunda_vuelta',
             'equipos_top',
             'patronHA',
             'esquema_minimax'

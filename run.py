@@ -10,12 +10,12 @@ from seleccionador_de_partidos import seleccionador_partidos
 
 def main():
     mejor_c, mejor_d = 0, 18
-    c, d = 4, 14
+    c, d = 3, 15
 
     # El primer fixture de la ejecucion
     # Vamos a asumir q siempre va a considerar el fixture pre armado, y q empieza vacio.
     print('empieza la magia')
-    anterior_fue_factible, mejor_sol, mejor_optimo_fo = minimax(c, d)
+    anterior_fue_factible, mejor_sol = minimax(c, d)
 
     # Iteramos moviendo c y d
     while anterior_fue_factible:
@@ -24,7 +24,7 @@ def main():
         print(f'seleccionador de partidos para {c} y {d}')
         seleccionador_partidos(args.partidos, c, d)
         print(f'arranca la ejecucion con {c} y {d}')
-        anterior_fue_factible, sol, optimo_fo = minimax(c, d)
+        anterior_fue_factible, sol= minimax(c, d)
 
         #if optimo_fo == 0 and anterior_fue_factible:
         #    mejor_sol = sol
