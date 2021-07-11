@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 def partidos_posibles_(c, d):
-    fixture = pd.read_excel(f'minimax_{c}_{d}', engine='openpyxl')
+    fixture = pd.read_excel(f'minimax_{c-1}_{d+1}.xlsx', engine='openpyxl')
     partidos_posibles = []
     for i in fixture.index:
         equipo1 = fixture['Team'][i]
